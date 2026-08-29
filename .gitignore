@@ -1,0 +1,29 @@
+# Secrets / provider state
+.env
+.env.*
+data/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime
+logs/
+run/
+monitor/state.json
+**/__pycache__/
+*.log
+*.pid
+
+# Dependencies
+node_modules/
+
+# Local databases / backups
+*.sqlite
+*.sqlite3
+*.db
+*.bak
+*.old
+*.zip
+*.tar
+*.tar.gz

@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+import http.client
+import json
+import os
+import re
+import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+UP_HOST = os.environ.get("UP_HOST", "127.0.0.1")
+UP_PORT = int(os.environ.get("UP_PORT", "20129"))
+LISTEN_HOST = os.environ.get("LISTEN_HOST", "127.0.0.1")
+LISTEN_PORT = int(os.environ.get("LISTEN_PORT", "20130"))
+ROUTE_LOG = os.environ.get(
+    "AUTO_ROUTE_LOG", "/home/openclaw/dev/9router/logs/auto-route.log"
+)
+
+HOP = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
+       "te", "trailers", "transfer-encoding", "upgrade", "content-length"}
+AUTO_NAMES = {"AUTO", "AUTOROUTE"}
+ROUTES = {
+    "GENERAL_LIGHT", "GENERAL_MEDIUM", "GENERAL_STRONG",
+    "CODING_LIGHT", "CODING_MEDIUM", "CODING_STRONG",
+    "VISION", "LONG_CONTEXT", "FAST_TOOLS",
+}
+_ROUTE_HINT = re.compile(r"^\s*\[(?:HERMES_)?ROUTE:([A-Z_]+)\]\s*", re.I)
+_LOG_LOCK = threading.Lock()
+
+
+def _text(value):
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        return "\n".join(_text(v) for v in value)
+    if isinstance(value, dict):
+        parts = []
+        for key in ("text", "content", "input_text"):
+            if key in value:
+                parts.append(_text(value[key]))
+        return "\n".join(parts)
+    return ""
+
+
+def _last_user_text(messages):
+    for msg in reversed(messages if isinstance(messages, list) else []):
+        if isinstance(msg, dict) and msg.get("role") == "user":
+            return _text(msg.get("content"))
+    return ""
+
+
+def _total_chars(messages):
+    return sum(
+        len(_text(m.get("content")))
+        for m in (messages if isinstance(messages, list) else [])
+        if isinstance(m, dict)
+    )
+
+
+def _has_image(messages):
+    for msg in messages if isinstance(messages, list) else []:
+        if not isinstance(msg, dict):
+            continue
+        content = msg.get("content")
+        if not isinstance(content, list):
+            continue
+        for item in content:
+            if not isinstance(item, dict):
+                continue
+            kind = str(item.get("type") or "").lower()
+            if kind in {"image", "image_url", "input_image"}:
+                return True
+            if "image_url" in item:
+                return True
+    return False
+
+
+def _hit(text, terms):
+    return sum(1 for term in terms if term in text)
+
+
+CODE_TERMS = (
+    " code", "coding", "bug", "debug", "fix ", "refactor", "implement",
+    "repository", " repo", "source code", "function", " class", "script",
+    "endpoint", "api ", "sql", "migration", "php", "python", "javascript",
+    "typescript", "node.js", "react", "next.js", "laravel", "codeigniter",
+    "wordpress", "snippet", "pytest", "unit test", "npm ", "composer ",
+)
+
+CODE_TERMS += (
+    "perbaiki", "kode", "fitur", "database", "schema", "test ", "tests ",
+    ".py", ".js", ".ts", ".tsx", ".jsx", ".php", ".sql", "```",
+)
+STRONG_TERMS = (
+    "architecture", "arsitektur", "security", "keamanan", "oauth", "auth ",
+    "race condition", "concurrency", "deadlock", "multi-file", "multiple files",
+    "whole repo", "entire repo", "seluruh project", "production", "root cause",
+    "data loss", "destructive", "hardening", "performance", "refactor besar",
+    "migration besar", "audit menyeluruh", "deep research", "threat model",
+)
+LIGHT_CODE_TERMS = (
+    "typo", "syntax", "sintaks", "rename", "one line", "satu baris",
+    "small edit", "edit kecil", "simple fix", "perbaikan kecil", "snippet",
+)
+LIGHT_GENERAL_TERMS = (
+    "summarize", "ringkas", "translate", "terjemah", "format", "rapikan",
+    "jelaskan singkat", "quick answer", "simple", "sederhana",
+)
+TOOL_TERMS = (
+    "check status", "cek status", "health check", "cek service", "service status",
+    "systemctl status", "docker ps", "cek disk", "cek ram", "disk usage",
+    "memory usage", "uptime", "ping", "list files", "lihat log", "cek log",
+    "inspect service", "cek proses", "process status",
+)
+
+
+def classify(payload):
+    messages = payload.get("messages") or []
+    user = _last_user_text(messages)
+    lower = f" {user.lower()} "
+    task_chars = len(user)
+    request_chars = _total_chars(messages)
+
+    hint = _ROUTE_HINT.match(user)
+    if hint:
+        route = hint.group(1).upper()
+        if route in ROUTES:
+            return route, "hermes-hint", task_chars, request_chars
+
+    if _has_image(messages):
+        return "VISION", "image-input", task_chars, request_chars
+    if task_chars >= 100_000 or request_chars >= 400_000:
+        return "LONG_CONTEXT", "large-context", task_chars, request_chars
+
+    code_score = _hit(lower, CODE_TERMS)
+    strong_score = _hit(lower, STRONG_TERMS)
+    if code_score:
+        if strong_score >= 2 or task_chars >= 30_000:
+            return "CODING_STRONG", "coding-complex", task_chars, request_chars
+        if _hit(lower, LIGHT_CODE_TERMS) and task_chars < 14_000:
+            return "CODING_LIGHT", "coding-simple", task_chars, request_chars
+        return "CODING_MEDIUM", "coding-normal", task_chars, request_chars
+
+    if _hit(lower, TOOL_TERMS) and strong_score == 0 and task_chars < 30_000:
+        return "FAST_TOOLS", "tool-heavy-fast", task_chars, request_chars
+    if strong_score >= 2 or task_chars >= 40_000:
+        return "GENERAL_STRONG", "general-complex", task_chars, request_chars
+    if _hit(lower, LIGHT_GENERAL_TERMS) and task_chars < 14_000:
+        return "GENERAL_LIGHT", "general-simple", task_chars, request_chars
+    return "GENERAL_MEDIUM", "general-normal", task_chars, request_chars
+
+
+def _log_route(route, reason, task_chars, request_chars):
+    record = {
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "route": route,
+        "reason": reason,
+        "task_chars": task_chars,
+        "request_chars": request_chars,
+    }
+    try:
+        os.makedirs(os.path.dirname(ROUTE_LOG), exist_ok=True)
+        with _LOG_LOCK, open(ROUTE_LOG, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record, separators=(",", ":")) + "\n")
+        os.chmod(ROUTE_LOG, 0o600)
+    except OSError:
+        pass
+
+
+def _route_body(body):
+    if not body:
+        return body, None, None
+    try:
+        payload = json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return body, None, None
+    requested = str(payload.get("model") or "").upper()
+    if requested not in AUTO_NAMES:
+        return body, None, None
+    route, reason, task_chars, request_chars = classify(payload)
+    payload["model"] = route
+    _log_route(route, reason, task_chars, request_chars)
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode(), route, reason
+
+
+class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
+    def log_message(self, fmt, *args):
+        return
+
+    def _proxy(self):
+        length = int(self.headers.get("Content-Length", "0") or 0)
+        body = self.rfile.read(length) if length else None
+        route = reason = None
+        if self.command == "POST" and "chat/completions" in self.path:
+            body, route, reason = _route_body(body)
+
+        headers = {k: v for k, v in self.headers.items() if k.lower() not in HOP}
+        headers["Host"] = f"{UP_HOST}:{UP_PORT}"
+        conn = http.client.HTTPConnection(UP_HOST, UP_PORT, timeout=180)
+        conn.request(self.command, self.path, body=body, headers=headers)
+        resp = conn.getresponse()
+        ctype = (resp.getheader("Content-Type") or "").lower()
+
+        self.send_response(resp.status)
+        for k, v in resp.getheaders():
+            if k.lower() not in HOP:
+                self.send_header(k, v)
+        if route:
+            self.send_header("X-Hermes-Route", route)
+            self.send_header("X-Hermes-Route-Reason", reason or "auto")
+        if "text/event-stream" in ctype:
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "close")
+            self.end_headers()
+            try:
+                while True:
+                    line = resp.readline()
+                    if not line:
+                        break
+                    stripped = line.rstrip(b"\r\n")
+                    if not stripped:
+                        continue
+                    if stripped.startswith((b"data:", b"event:", b"id:", b"retry:")):
+                        self.wfile.write(stripped + b"\n\n")
+                    else:
+                        self.wfile.write(stripped + b"\n")
+                    self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+        else:
+            payload = resp.read()
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+        conn.close()
+        self.close_connection = True
+
+    do_GET = _proxy
+    do_POST = _proxy
+    do_PUT = _proxy
+    do_DELETE = _proxy
+
+
+if __name__ == "__main__":
+    ThreadingHTTPServer((LISTEN_HOST, LISTEN_PORT), Handler).serve_forever()
