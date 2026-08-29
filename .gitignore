@@ -1,29 +1,15 @@
-# Secrets / provider state
+
+# HERMES SECURE BACKUP
 .env
-.env.*
-data/
-*.pem
-*.key
-*.p12
-*.pfx
-
-# Runtime
-logs/
-run/
-monitor/state.json
-**/__pycache__/
-*.log
-*.pid
-
-# Dependencies
-node_modules/
-
-# Local databases / backups
+.env.local
+.env.production
+.env.development
+*.sql
 *.sqlite
-*.sqlite3
 *.db
-*.bak
-*.old
 *.zip
 *.tar
 *.tar.gz
+*.bak
+node_modules/
+vendor/
