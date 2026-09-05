@@ -10,7 +10,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-BASE = Path('/home/openclaw/dev/9router')
+BASE = Path('/home/openclaw/apps/9router')
 DB = BASE / 'data/db/data.sqlite'
 STATE = BASE / 'monitor/state.json'
 LOG = BASE / 'logs/healthwatch.log'

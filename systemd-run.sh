@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-BASE=/home/openclaw/dev/9router
+BASE=/home/openclaw/apps/9router
 cd "$BASE"
 mkdir -p data logs run
 for _ in $(seq 1 60); do

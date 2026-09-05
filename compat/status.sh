@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -u
-PIDFILE=/home/openclaw/dev/9router/run/compat-shim.pid
+PIDFILE=/home/openclaw/apps/9router/run/compat-shim.pid
 if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
   ps -p "$(cat "$PIDFILE")" -o pid,etime,rss,%mem,%cpu,cmd
 else

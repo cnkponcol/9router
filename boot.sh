@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -u
-cd /home/openclaw/dev/9router
+cd /home/openclaw/apps/9router
 for _ in $(seq 1 60); do
   if tailscale ip -4 2>/dev/null | grep -q .; then
     ./start.sh || exit 1

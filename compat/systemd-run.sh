@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-BASE=/home/openclaw/dev/9router
+BASE=/home/openclaw/apps/9router
 mkdir -p "$BASE/run" "$BASE/logs"
 for _ in $(seq 1 60); do
   TS_IP="$(tailscale ip -4 2>/dev/null | head -1 || true)"

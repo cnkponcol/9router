@@ -5,7 +5,7 @@ Status: active and verified on 2026-08-29.
 ## Flow
 `Telegram/User -> Hermes parent (FREE) -> delegate_task (AUTO) -> local classifier -> 9Router Combo -> ordered model fallback`
 
-The classifier runs inside `/home/openclaw/dev/9router/compat/compat_shim.py` on `127.0.0.1:20130`. It does not call another LLM, so task classification adds no model-token cost.
+The classifier runs inside `/home/openclaw/apps/9router/compat/compat_shim.py` on `127.0.0.1:20130`. It does not call another LLM, so task classification adds no model-token cost.
 
 ## Automatic routes
 - GENERAL_LIGHT: simple summary/format/straightforward reasoning.

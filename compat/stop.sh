@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-PIDFILE=/home/openclaw/dev/9router/run/compat-shim.pid
+PIDFILE=/home/openclaw/apps/9router/run/compat-shim.pid
 if [ ! -f "$PIDFILE" ]; then
   echo "Compat shim not running"
   exit 0

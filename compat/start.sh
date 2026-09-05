@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-BASE=/home/openclaw/dev/9router
+BASE=/home/openclaw/apps/9router
 PIDFILE="$BASE/run/compat-shim.pid"
 LOGFILE="$BASE/logs/compat-shim.log"
 mkdir -p "$BASE/run" "$BASE/logs"

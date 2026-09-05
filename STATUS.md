@@ -2,7 +2,7 @@
 
 Date: 2026-08-29
 Host: `mcp.kuskuskuy.com`
-Path: `/home/openclaw/dev/9router`
+Path: `/home/openclaw/apps/9router`
 
 ## Runtime
 - 9Router **0.5.55** is running privately on `100.114.241.64:20128` via Tailscale.

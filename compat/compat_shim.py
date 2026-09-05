@@ -12,7 +12,7 @@ UP_PORT = int(os.environ.get("UP_PORT", "20129"))
 LISTEN_HOST = os.environ.get("LISTEN_HOST", "127.0.0.1")
 LISTEN_PORT = int(os.environ.get("LISTEN_PORT", "20130"))
 ROUTE_LOG = os.environ.get(
-    "AUTO_ROUTE_LOG", "/home/openclaw/dev/9router/logs/auto-route.log"
+    "AUTO_ROUTE_LOG", "/home/openclaw/apps/9router/logs/auto-route.log"
 )
 
 HOP = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization",

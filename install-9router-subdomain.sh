@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SRC=/home/openclaw/dev/9router/9router-subdomain-nginx.conf
+SRC=/home/openclaw/apps/9router/9router-subdomain-nginx.conf
 DST=/etc/nginx/sites-available/9router-private
 LINK=/etc/nginx/sites-enabled/9router-private
-BACKUP_DIR=/home/openclaw/dev/9router/backups/subdomain-$(date +%Y%m%d-%H%M%S)
+BACKUP_DIR=/home/openclaw/apps/9router/backups/subdomain-$(date +%Y%m%d-%H%M%S)
 
 [ -f "$SRC" ] || { echo "Missing $SRC" >&2; exit 1; }
 mkdir -p "$BACKUP_DIR"

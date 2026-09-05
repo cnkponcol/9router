@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd /home/openclaw/dev/9router
-export DATA_DIR=/home/openclaw/dev/9router/data
+cd /home/openclaw/apps/9router
+export DATA_DIR=/home/openclaw/apps/9router/data
 export HOME=/home/openclaw
 PROVIDER_ID='openai-compatible-chat-8f3d7efe-1b95-4587-9cc6-a6b17e2a7ace'
 
