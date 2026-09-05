@@ -1,29 +1,35 @@
 # 9Router Routing Map
 
-Updated: 2026-08-29
+Updated: 2026-08-30
 
-Default strategy: **ordered fallback**. `Combo Round Robin` remains off. User may reorder models from the Combos UI.
+Default strategy: **ordered fallback**. `Combo Round Robin` remains off. Provider priority follows the owner policy below.
+
+## Provider priority (owner policy)
+- Global priority: **Groq -> Antigravity/Google -> OpenAI Codex -> other existing providers -> TokenPortal**.
+- TokenPortal is paid, so `tp/*` stays below every non-TokenPortal model in mixed-provider Combos.
+- Relative model order inside the same provider is preserved unless explicitly changed.
 
 ## General
-- `GENERAL_LIGHT`: `tp/longcat-2` -> `tp/nemotron-lightning` -> `tp/gpt-oss-20b` -> `tp/qwen-35b-fast` -> `tp/mimo-v25-free` -> `ag/gemini-3.5-flash-extra-low` -> `gh/gpt-5.4-mini-free-auto`
-- `GENERAL_MEDIUM`: `tp/qwen-3.8-27b` -> `tp/qwen-35b` -> `tp/deepseek-v4-flash` -> `tp/kimi-k3-fast` -> `ag/gemini-3.7-flash-medium` -> `ag/gpt-oss-120b-medium` -> `tp/minimax-m3`
-- `GENERAL_STRONG`: `tp/deepseek-v4-pro` -> `tp/glm-52` -> `tp/kimi-k3` -> `ag/claude-sonnet-4-6` -> `ag/claude-opus-4-6-thinking` -> `ag/gemini-3.7-flash-high` -> `cx/gpt-5.6-sol` -> `cx/gpt-5.6-terra`
+- `GENERAL_LIGHT`: `ag/gemini-3.5-flash-extra-low` -> `gh/gpt-5.4-mini-free-auto` -> `tp/longcat-2` -> `tp/nemotron-lightning` -> `tp/gpt-oss-20b` -> `tp/qwen-35b-fast` -> `tp/mimo-v25-free`
+- `GENERAL_MEDIUM`: `ag/gemini-3.7-flash-medium` -> `ag/gpt-oss-120b-medium` -> `tp/qwen-3.8-27b` -> `tp/qwen-35b` -> `tp/deepseek-v4-flash` -> `tp/kimi-k3-fast` -> `tp/minimax-m3`
+- `GENERAL_STRONG`: `ag/claude-sonnet-4-6` -> `ag/claude-opus-4-6-thinking` -> `ag/gemini-3.7-flash-high` -> `cx/gpt-5.6-sol` -> `cx/gpt-5.6-terra` -> `tp/deepseek-v4-pro` -> `tp/glm-52` -> `tp/kimi-k3`
 
 ## Coding
-- `CODING_LIGHT`: `tp/codestral-free` -> `tp/kimi-k27-code-fast` -> `tp/north-mini-code` -> `tp/mimo-v25-free` -> `gh/mai-code-1.1-flash` -> `tp/longcat-2` -> `cx/gpt-5.3-codex-spark`
-- `CODING_MEDIUM`: `tp/kimi-k27-code` -> `tp/deepseek-v4-flash` -> `tp/qwen-3.8-27b` -> `tp/glm-52-fast` -> `gh/gpt-5.6-luna-free-auto` -> `ag/claude-sonnet-4-6` -> `cx/gpt-5.6-luna` -> `tp/longcat-2`
-- `CODING_STRONG`: `tp/deepseek-v4-pro` -> `tp/glm-52` -> `tp/kimi-k3` -> `ag/claude-sonnet-4-6` -> `ag/claude-opus-4-6-thinking` -> `cx/gpt-5.6-sol` -> `cx/gpt-5.6-terra` -> `cx/gpt-5.5` -> `gh/gpt-5.6-luna` -> `tp/minimax-m3`
+- `CODING_LIGHT`: `cx/gpt-5.3-codex-spark` -> `gh/mai-code-1.1-flash` -> `tp/codestral-free` -> `tp/kimi-k27-code-fast` -> `tp/north-mini-code` -> `tp/mimo-v25-free` -> `tp/longcat-2`
+- `CODING_MEDIUM`: `ag/claude-sonnet-4-6` -> `cx/gpt-5.6-luna` -> `gh/gpt-5.6-luna-free-auto` -> `tp/kimi-k27-code` -> `tp/deepseek-v4-flash` -> `tp/qwen-3.8-27b` -> `tp/glm-52-fast` -> `tp/longcat-2`
+- `CODING_STRONG`: `ag/claude-sonnet-4-6` -> `ag/claude-opus-4-6-thinking` -> `cx/gpt-5.6-sol` -> `cx/gpt-5.6-terra` -> `cx/gpt-5.5` -> `gh/gpt-5.6-luna` -> `tp/deepseek-v4-pro` -> `tp/glm-52` -> `tp/kimi-k3` -> `tp/minimax-m3`
 
 ## Specialized
-- `VISION`: vision-capable models across Antigravity, TokenPortal, Codex, GitHub and OpenRouter.
-- `LONG_CONTEXT`: 1M-class context models where available, with cross-provider fallbacks.
-- `FAST_TOOLS`: low-latency tool-capable models, favoring `*-fast` routes.
-- `EMERGENCY_FALLBACK`: intentionally crosses TokenPortal, Antigravity, GitHub, Groq and OpenRouter.
+- `VISION`: `ag/gemini-3.7-flash-high` -> `ag/claude-sonnet-4-6` -> `cx/gpt-5.6-sol` -> `gh/gpt-5.6-luna-free-auto` -> `openrouter/minimax/minimax-m3:free` -> `tp/kimi-k3-fast` -> `tp/kimi-k27-code-fast` -> `tp/minimax-m3`
+- `LONG_CONTEXT`: `ag/gemini-3.7-flash-medium` -> `ag/claude-sonnet-4-6` -> `gh/gpt-4.1` -> `openrouter/minimax/minimax-m3:free` -> `tp/deepseek-v4-pro` -> `tp/kimi-k3` -> `tp/minimax-m3`
+- `FAST_TOOLS`: `ag/gemini-3.7-flash-low` -> `gh/mai-code-1.1-flash` -> `tp/qwen-35b-fast` -> `tp/glm-52-short-fast` -> `tp/kimi-k27-code-fast` -> `tp/deepseek-v4-flash` -> `tp/nemotron-lightning`
+- `EMERGENCY_FALLBACK`: `groq/openai/gpt-oss-120b` -> `ag/gemini-3.5-flash-extra-low` -> `gh/gpt-5.4-mini-free-auto` -> `openrouter/minimax/minimax-m3:free` -> `tp/longcat-2` -> `tp/codestral-free` -> `tp/mimo-v25-free`
+
 ## Free/provider utility routes
-- `FREE`: LongCat first, then TokenPortal free coding/general models, then OpenRouter and Groq fallbacks.
-- `TPFREE`: TokenPortal free pool.
-- `GROQFREE`: Groq OSS/Qwen/Llama pool; keep away from large Hermes prompts when TPM is restrictive.
-- `ORFREE`: current OpenRouter free model from live catalog.
+- `FREE`: `groq/openai/gpt-oss-120b` -> `openrouter/minimax/minimax-m3:free` -> `tp/longcat-2` -> `tp/codestral-free` -> `tp/mimo-v25-free` -> `tp/big-pickle-free` -> `tp/north-mini-code`
+- `TPFREE`: `tp/longcat-2` -> `tp/codestral-free` -> `tp/mimo-v25-free` -> `tp/big-pickle-free` -> `tp/ds-v4-flash-free` -> `tp/minimax-m27-free` -> `tp/nemotron-ultra-free`
+- `GROQFREE`: `groq/openai/gpt-oss-120b` -> `groq/qwen/qwen3-32b` -> `groq/llama-3.3-70b-versatile`
+- `ORFREE`: `openrouter/minimax/minimax-m3:free`
 
 ## Capacity adapters
 - Vision: Gemini 3.7 Flash High, Claude Sonnet 4.6, Kimi K3 Fast, Kimi K2.7 Code Fast, MiniMax M3, GitHub GPT-5.6 Luna Free Auto.

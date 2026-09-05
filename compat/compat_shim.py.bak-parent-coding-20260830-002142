@@ -166,46 +166,6 @@ def _log_route(route, reason, task_chars, request_chars):
         pass
 
 
-MANUAL_MODELS = {
-    "claude": "ag/claude-sonnet-4-6",
-    "claude-sonnet": "ag/claude-sonnet-4-6",
-    "sonnet": "ag/claude-sonnet-4-6",
-    "claude-opus": "ag/claude-opus-4-6-thinking",
-    "opus": "ag/claude-opus-4-6-thinking",
-    "gemini": "ag/gemini-3.7-flash-high",
-    "antigravity": "ag/gemini-3.7-flash-high",
-    "antigrafity": "ag/gemini-3.7-flash-high",
-    "antigrafiti": "ag/gemini-3.7-flash-high",
-    "codex": "cx/gpt-5.6-sol",
-    "tokenportal": "tp/deepseek-v4-pro",
-    "token-portal": "tp/deepseek-v4-pro",
-    "token portal": "tp/deepseek-v4-pro",
-}
-
-_MANUAL_CMD = re.compile(
-    r"^\s*/model\s+(auto|claude(?:-sonnet|-opus)?|sonnet|opus|gemini|antigravity|antigrafity|antigrafiti|codex|token(?:-|\s*)portal)\b",
-    re.I,
-)
-_MANUAL_NL = re.compile(
-    r"(?:pakai|gunakan|use|coba|test|uji)(?:\s+model)?\s+"
-    r"(auto|claude\s*opus|claude\s*sonnet|claude|sonnet|opus|gemini|antigravity|antigrafity|antigrafiti|codex|token\s*portal|tokenportal)\b",
-    re.I,
-)
-
-
-def _manual_model(payload):
-    user = _last_user_text(payload.get("messages") or [])
-    match = _MANUAL_CMD.search(user) or _MANUAL_NL.search(user)
-    if not match:
-        return None, None
-    key = re.sub(r"\s+", "-", match.group(1).strip().lower())
-    if key == "auto":
-        return "AUTO", "manual-auto"
-    key = {"claude-sonnet": "claude-sonnet", "claude-opus": "claude-opus", "token-portal": "token-portal"}.get(key, key)
-    model = MANUAL_MODELS.get(key)
-    return (model, f"manual-{key}") if model else (None, None)
-
-
 def _route_body(body):
     if not body:
         return body, None, None
@@ -214,30 +174,9 @@ def _route_body(body):
     except (UnicodeDecodeError, json.JSONDecodeError):
         return body, None, None
     requested = str(payload.get("model") or "").upper()
-
-    manual, manual_reason = _manual_model(payload)
-    if manual and requested in AUTO_NAMES.union({"FREE"}):
-        candidate, base_reason, task_chars, request_chars = classify(payload)
-        if not candidate.startswith("CODING_"):
-            return body, None, None
-        if manual == "AUTO":
-            if requested == "FREE":
-                route, reason = candidate, "parent-" + base_reason
-            else:
-                route, reason = candidate, base_reason
-        else:
-            route, reason = manual, manual_reason
-            task_chars = len(_last_user_text(payload.get("messages") or []))
-            request_chars = _total_chars(payload.get("messages") or [])
-    elif requested in AUTO_NAMES:
-        route, reason, task_chars, request_chars = classify(payload)
-    elif requested == "FREE":
-        candidate, base_reason, task_chars, request_chars = classify(payload)
-        if not candidate.startswith("CODING_"):
-            return body, None, None
-        route, reason = candidate, "parent-" + base_reason
-    else:
+    if requested not in AUTO_NAMES:
         return body, None, None
+    route, reason, task_chars, request_chars = classify(payload)
     payload["model"] = route
     _log_route(route, reason, task_chars, request_chars)
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode(), route, reason

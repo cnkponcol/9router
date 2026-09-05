@@ -55,3 +55,38 @@ Path: `/home/openclaw/dev/9router`
 - Recovery alerts are sent once; persistent incident reminders are capped at 6 hours.
 - Codex AutoPing remains disabled intentionally to avoid spending quota for monitoring.
 - Current validation: healthy; 6 active provider connections; synthetic all-route failure detection passed.
+
+## 2026-08-30 - Provider priority reordered
+- All mixed-provider Combos now keep TokenPortal (`tp/*`) below every non-TokenPortal model.
+- Global preference: Groq -> Antigravity -> Codex -> other existing providers -> TokenPortal.
+- Same-provider model ordering preserved. SQLite backup: `data.sqlite.backup-reorder-20260830-001241`.
+- Validation: 14 Combos, zero TokenPortal-last violations, SQLite quick_check OK.
+
+## 2026-08-30 — Hermes cost-priority routing
+- `FREE` expanded to: Groq -> Antigravity -> Codex -> GitHub/OpenRouter -> TokenPortal last.
+- Direct parent `FREE` coding requests are now deterministically rerouted by the local shim to `CODING_LIGHT|MEDIUM|STRONG` even if Hermes does not call `delegate_task`.
+- Groq `openai/gpt-oss-120b` was added first to the six main GENERAL/CODING combos; TokenPortal remains after all non-TP models.
+- Live test: normal chat resolved Groq; normal coding was classified `CODING_MEDIUM` and resolved Antigravity Claude after Groq could not handle the large request budget.
+- Known Groq free constraint: observed TPM limit 8,000 versus a historical Hermes request of 68,554 tokens, so large Hermes contexts will normally fall through to Antigravity.
+
+## 2026-09-01 — Recovery + boot persistence
+- Incident: VPS recovery left stale PID files while 9Router (`:20128`) and AUTO compat (`127.0.0.1:20130`) were not running; Hermes Gateway itself stayed active.
+- Stale PID files were cleaned and both routing layers were restored; `/api/health` returned `{"ok":true}`.
+- Added persistent systemd user services: `9router.service` and `9router-compat.service`.
+- Both services are enabled under `default.target`; user lingering is enabled, so they start without an interactive login after reboot.
+- Both services use `Restart=always`; Tailscale readiness is waited for up to 120 seconds before launch.
+- Controlled restart validation passed: 9Router and compat returned active, ports `20128`/`20130` reopened, monitor reported zero incidents.
+- Current health-monitor provider count: 7 active provider connections.
+
+## 2026-09-01 — reboot persistence + Gemini routing repair
+- Desktop Commander Remote now has a persistent user systemd service: `desktop-commander-remote.service`.
+- Service is enabled, active, `Restart=always`, and user `openclaw` has `Linger=yes`, so it starts again after VPS reboot without an interactive login.
+- Startup wrapper prefers the cached Desktop Commander binary and only falls back to `npx` if the cache is missing.
+- Removed retired `ag/gemini-3.5-flash-extra-low` references from `EMERGENCY_FALLBACK`, `FREE`, and `GENERAL_LIGHT`.
+- Existing `ag/gemini-3.7-flash-low` is preserved/used as the replacement without duplicating entries.
+- Pre-change DB backup: `data/db/data.sqlite.backup-gemini37-20260901-140614`.
+- SQLite `quick_check`: `ok`; remaining Gemini 3.5 combo refs: `0`.
+- 9Router and AUTO compatibility services are active; 9Router health returns `{"ok":true}`.
+- Health watcher reports 7 providers and zero incidents.
+- Live Hermes routing smoke returned exactly `ROUTE_OK` with no retired Gemini warning.
+- Hermes cron gateway is active with 4 jobs; next run is the 18:30 WIB publisher job.
