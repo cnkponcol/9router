@@ -1,6 +1,6 @@
 # Hermes -> 9Router Automatic Routing
 
-Status: active and verified on 2026-08-29.
+Status: active; re-verified 2026-09-06.
 
 ## Flow
 `Telegram/User -> Hermes parent (FREE) -> delegate_task (AUTO) -> local classifier -> 9Router Combo -> ordered model fallback`
@@ -35,4 +35,4 @@ Complexity is based primarily on the delegated goal (`task_chars`), not Hermes' 
 ## Audit
 Routing metadata is written to `logs/auto-route.log` without prompt content. Fields contain timestamp, selected route, reason, task character count, and request character count. The file is private (`0600`).
 
-The user controls model order inside Combos. Do not reorder models automatically.
+The owner controls model policy inside Combos. Automatic routing selects a logical Combo, never an individual provider. Coding Combos may use Codex and TokenPortal; TokenPortal remains the trailing safety-net provider tier.

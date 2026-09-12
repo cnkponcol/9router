@@ -1,0 +1,16 @@
+# Runtime / secrets
+/.env
+/.env.*
+/data/
+/logs/
+/run/
+/backups/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+*.pem
+*.key
+
+# Generated / dependencies
+/node_modules/

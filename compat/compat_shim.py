@@ -177,9 +177,9 @@ MANUAL_MODELS = {
     "antigrafity": "ag/gemini-3.7-flash-high",
     "antigrafiti": "ag/gemini-3.7-flash-high",
     "codex": "cx/gpt-5.6-sol",
-    "tokenportal": "tp/deepseek-v4-pro",
-    "token-portal": "tp/deepseek-v4-pro",
-    "token portal": "tp/deepseek-v4-pro",
+    "tokenportal": "tp/gpt-56-sol",
+    "token-portal": "tp/gpt-56-sol",
+    "token portal": "tp/gpt-56-sol",
 }
 
 _MANUAL_CMD = re.compile(
